@@ -9,7 +9,7 @@ if __name__ == "__main__":
 
     test = load_test_data()
     submission = load_sample_submission()
-    model, tokenizer, pipe = load_model_and_tokenizer(model_name)
+    pipe = load_model_and_tokenizer(model_name)
     preds = run_inference(pipe, test)
     submission['Answer'] = preds
     save_submission(submission)
