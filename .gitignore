@@ -27,11 +27,7 @@ tokenizer_config.json
 .env.*
 
 # 📊 Output/결과
-baseline_submission.csv
-output/
-results/
-*.jsonl
-*.csv
+sample_submission.csv
 
 # 🧠 VSCode
 .vscode/
