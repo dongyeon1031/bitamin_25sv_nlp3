@@ -1,0 +1,1 @@
+MODEL_NAME = "beomi/gemma-ko-7b"
