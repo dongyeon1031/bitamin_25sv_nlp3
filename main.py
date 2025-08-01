@@ -8,8 +8,8 @@ if __name__ == "__main__":
     model_name = MODEL_NAME
 
     test = load_test_data()
-    sample_submission = load_sample_submission()
+    submission = load_sample_submission()
     model, tokenizer, pipe = load_model_and_tokenizer(model_name)
     preds = run_inference(pipe, test)
-    sample_submission['Answer'] = preds
-    save_submission(sample_submission)
+    submission['Answer'] = preds
+    save_submission(submission)

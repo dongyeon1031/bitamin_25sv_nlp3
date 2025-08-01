@@ -27,7 +27,7 @@ tokenizer_config.json
 .env.*
 
 # 📊 Output/결과
-sample_submission.csv
+submission.csv
 
 # 🧠 VSCode
 .vscode/
