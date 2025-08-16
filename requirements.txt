@@ -1,0 +1,6 @@
+# Core
+chromadb==0.5.5
+sentence-transformers==2.7.0
+tqdm==4.66.4
+numpy>=1.24.0
+pandas>=2.0.0
