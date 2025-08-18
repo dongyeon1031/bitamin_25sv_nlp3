@@ -1,2 +1,1 @@
-# MODEL_NAME = "beomi/gemma-ko-7b"
-MODEL_NAME = "meta-llama/Meta-Llama-3.1-8B-Instruct"
+MODEL_NAME = "reedmayhew/claude-3.7-sonnet-reasoning-gemma3-12B"
