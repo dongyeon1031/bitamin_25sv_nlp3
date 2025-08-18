@@ -23,11 +23,12 @@ def extract_answer_only(generated_text: str, original_question: str) -> str:
     else:
         return text
 
-def run_inference(pipe, test_df):
+def run_inference(llm, test_df):
     preds = []
     for q in tqdm(test_df['Question'], desc="Inference"):
         prompt = make_prompt_auto(q)
-        output = pipe(prompt, max_new_tokens=128, temperature=0.2, top_p=0.9)
-        pred_answer = extract_answer_only(output[0]["generated_text"], original_question=q)
+        response = llm(prompt, max_tokens=128, temperature=0.2, top_p=0.9)
+        generated_text = response['choices'][0]['text']
+        pred_answer = extract_answer_only(generated_text, original_question=q)
         preds.append(pred_answer)
     return preds
