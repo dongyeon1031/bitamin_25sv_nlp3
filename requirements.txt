@@ -3,4 +3,4 @@ pandas
 torch
 transformers
 accelerate
-llama_cpp
+llama-cpp-python
