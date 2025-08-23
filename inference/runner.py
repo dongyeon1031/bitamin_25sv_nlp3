@@ -27,7 +27,7 @@ def run_inference(llm, test_df):
     preds = []
     for q in tqdm(test_df['Question'], desc="Inference"):
         prompt = make_prompt_auto(q)
-        response = llm(prompt, max_tokens=128, temperature=0.2, top_p=0.9)
+        response = llm(prompt, max_tokens=512, temperature=0.2, top_p=0.9)
         generated_text = response['choices'][0]['text']
         pred_answer = extract_answer_only(generated_text, original_question=q)
         preds.append(pred_answer)
