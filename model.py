@@ -1,7 +1,7 @@
 from sentence_transformers import SentenceTransformer
 
 # 다운로드할 로컬 경로 지정
-save_path = "model/bge-m3"
+save_path = "models/bge-m3"
 
 # 모델 다운로드
 print(f"'{save_path}' 경로에 BAAI/bge-m3 모델 다운로드를 시작합니다.")
