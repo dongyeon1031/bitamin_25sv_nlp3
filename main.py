@@ -3,22 +3,10 @@ from data.loader import load_test_data, load_sample_submission
 from inference.model import load_model_and_tokenizer
 from configs.model_config import MODEL_NAME
 from output.save import save_submission
+from inference.download import download_model
 
 if __name__ == "__main__":
-    '''
-        여기 나중에 따로 빼기..
-    '''
-    import os
-    from huggingface_hub import snapshot_download
-
-    model_dir = "./models/claude3-gemma"
-    if not os.path.exists(model_dir):
-        snapshot_download(
-            repo_id="reedmayhew/claude-3.7-sonnet-reasoning-gemma3-12B",
-            local_dir=model_dir,
-            local_dir_use_symlinks=False  # 하드카피로 저장
-        )
-    
+    download_model()
 
     model_name = MODEL_NAME
 
