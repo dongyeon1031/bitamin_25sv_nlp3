@@ -1,6 +1,6 @@
 import hashlib
 from typing import List, Dict, Tuple
-from configs.rag_config import CHUNK_SIZE_CHARS, CHUNK_OVERLAP_CHARS
+from configs.rag_config import CHUNK_SIZE_CHARS, CHUNK_OVERLAP_CHARS, MAX_SECTION_SIZE_CHARS
 import uuid
 
 def _sliding_chunks(text: str) -> List[Tuple[str, int]]:
