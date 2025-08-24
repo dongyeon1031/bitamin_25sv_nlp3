@@ -1,6 +1,7 @@
 import hashlib
 from typing import List, Dict, Tuple
 from configs.rag_config import CHUNK_SIZE_CHARS, CHUNK_OVERLAP_CHARS
+import uuid
 
 def _sliding_chunks(text: str) -> List[Tuple[str, int]]:
     chunks = []
@@ -16,15 +17,17 @@ def _sliding_chunks(text: str) -> List[Tuple[str, int]]:
         start = max(end - CHUNK_OVERLAP_CHARS, start + 1)
     return chunks
 
+
+
 def make_chunks_from_sections(sections: List[Dict]) -> List[Dict]:
     out = []
     for sec in sections:
-        for chunk, offset in _sliding_chunks(sec["parent_text"]):
-            cid = hashlib.md5((sec["source"] + str(offset) + chunk[:20]).encode()).hexdigest()[:16]
+        ptxt = sec["parent_text"][:MAX_SECTION_SIZE_CHARS]
+        for chunk, offset in _sliding_chunks(ptxt):
             out.append({
-                "id": cid,
+                "id": f"chunk_{uuid.uuid4().hex}", 
                 "text": chunk,
-                "parent_text": sec["parent_text"],  
+                "parent_text": ptxt,
                 "meta": {
                     "parent_id": f"{sec['source']}::제{sec['article_no']}조" if sec.get("article_no") else f"{sec['source']}::all",
                     "offset": offset,
