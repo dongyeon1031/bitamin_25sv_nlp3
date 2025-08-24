@@ -6,3 +6,4 @@ sentence-transformers>=2.6.1
 huggingface-hub>=0.23.0
 llama-cpp-python[cuda12]==0.3.16
 regex
+pandas
