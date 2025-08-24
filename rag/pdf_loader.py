@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import os
 from typing import List, Dict
 from configs.rag_config import PDF_LIST
@@ -8,10 +7,6 @@ from index.pdf_processing import (
 )
 
 def load_all_pdfs() -> List[Dict]:
-    """
-    PDF_LIST에 있는 모든 PDF를 읽어 조문 단위 섹션으로 분리.
-    반환: [{"source":..,"law_name":..,"kind":..,"article_no":..,"title":..,"parent_text":..}, ...]
-    """
     sections = []
     for pdf_path, law_name, kind in PDF_LIST:
         if not os.path.exists(pdf_path):
@@ -22,7 +17,6 @@ def load_all_pdfs() -> List[Dict]:
         full = normalize_full_text("\n".join(pages))
         _, articles = split_by_article(full)
         if not articles:
-            # 조문 분리가 안 되면 통짜 섹션
             sections.append({
                 "source": os.path.basename(pdf_path),
                 "law_name": law_name,
@@ -47,5 +41,4 @@ def load_all_pdfs() -> List[Dict]:
     return sections
 
 def load_pdfs():
-    """Backward compatibility alias."""
     return load_all_pdfs()
