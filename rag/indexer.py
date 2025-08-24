@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# rag/indexer.py
 import os, json, pickle
 from typing import List, Dict
 import chromadb

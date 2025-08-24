@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import json, pickle
 from typing import List, Dict, Tuple
 import numpy as np
@@ -7,16 +6,18 @@ from chromadb.utils import embedding_functions
 from rag.embeddings import LocalEmbedder
 from configs.rag_config import (
     DOCSTORE_PATH, BM25_INDEX_PATH, CHROMA_DIR,
-    TOP_K_VECTOR, TOP_K_BM25, MERGE_TOP_K, ALPHA_VECTOR
+    TOP_K_VECTOR, TOP_K_BM25, MERGE_TOP_K
 )
 
-def _load_docstore() -> Dict[str, Dict]:
+def _load_docstore() -> Tuple[Dict[str, Dict], List[str]]:
     ds = {}
+    ids = []
     with open(DOCSTORE_PATH, "r", encoding="utf-8") as f:
         for line in f:
             obj = json.loads(line)
             ds[obj["id"]] = obj
-    return ds
+            ids.append(obj["id"])
+    return ds, ids
 
 def _tokenize_ko(text: str):
     import re
@@ -25,59 +26,49 @@ def _tokenize_ko(text: str):
 
 class HybridRetriever:
     def __init__(self):
-        self.docstore = _load_docstore()
+        self.docstore, self.id_list = _load_docstore()
 
         with open(BM25_INDEX_PATH, "rb") as f:
-            self.bm25 = pickle.load(f)["bm25"]
-
+            bm25_obj = pickle.load(f)
+            self.bm25 = bm25_obj["bm25"] if isinstance(bm25_obj, dict) else bm25_obj
         self.embedder = LocalEmbedder()
+
         self.client = chromadb.PersistentClient(path=CHROMA_DIR)
 
-        # trick to give chroma our embedder
         outer = self
         class _EmbedFunc(embedding_functions.EmbeddingFunction):
             def __call__(self, texts):
                 return outer.embedder.encode(texts).tolist()
 
-        self.collection = self.client.get_collection("law_chunks", embedding_function=_EmbedFunc())
+        self.collection = self.client.get_collection(
+            "law_chunks",
+            embedding_function=_EmbedFunc()
+        )
 
-    def vector_search(self, query: str, top_k: int) -> List[Tuple[str, float]]:
+    def vector_search(self, query: str, top_k: int) -> List[str]:
         res = self.collection.query(query_texts=[query], n_results=top_k)
         ids = res["ids"][0]
-        dists = res.get("distances", [[]])[0]
-        sims = [1.0 - float(d) for d in dists]  # cosine distance → similarity
-        return list(zip(ids, sims))
+        return [(cid, rank+1) for rank, cid in enumerate(ids)]
 
-    def bm25_search(self, query: str, top_k: int) -> List[Tuple[str, float]]:
+    def bm25_search(self, query: str, top_k: int) -> List[str]:
         toks = _tokenize_ko(query)
         scores = self.bm25.get_scores(toks)
         idxs = np.argsort(scores)[::-1][:top_k]
-        id_list = list(self.docstore.keys())
-        return [(id_list[i], float(scores[i])) for i in idxs]
+        return [(self.id_list[i], rank+1) for rank, i in enumerate(idxs)]
 
-    @staticmethod
-    def _minmax(xs: List[float]) -> List[float]:
-        if not xs:
-            return []
-        mn, mx = min(xs), max(xs)
-        if mx - mn < 1e-8:
-            return [0.0 for _ in xs]
-        return [(x - mn) / (mx - mn + 1e-8) for x in xs]
-
-    def retrieve(self, query: str, merge_top_k: int = MERGE_TOP_K) -> List[Dict]:
+    def retrieve(self, query: str, merge_top_k: int = MERGE_TOP_K, k: int = 60) -> List[Dict]:
         v_hits = self.vector_search(query, TOP_K_VECTOR)
         b_hits = self.bm25_search(query, TOP_K_BM25)
 
-        vdict = {i: s for i, s in v_hits}
-        bdict = {i: s for i, s in b_hits}
-        all_ids = list(set(vdict) | set(bdict))
-
-        v_norm = self._minmax([vdict.get(i, 0.0) for i in all_ids])
-        b_norm = self._minmax([bdict.get(i, 0.0) for i in all_ids])
+        rank_dicts = {"vector": dict(v_hits), "bm25": dict(b_hits)}
+        all_ids = set(rank_dicts["vector"].keys()) | set(rank_dicts["bm25"].keys())
 
         merged = []
-        for idx, cid in enumerate(all_ids):
-            score = ALPHA_VECTOR * v_norm[idx] + (1 - ALPHA_VECTOR) * b_norm[idx]
+        for cid in all_ids:
+            score = 0.0
+            for rdict in rank_dicts.values():
+                if cid in rdict:
+                    score += 1.0 / (k + rdict[cid])
             merged.append((cid, score))
 
         merged.sort(key=lambda x: x[1], reverse=True)

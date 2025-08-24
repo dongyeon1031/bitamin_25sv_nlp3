@@ -1,6 +1,9 @@
-# -*- coding: utf-8 -*-
+#rag/chunker
 from typing import List, Dict, Tuple
 from configs.rag_config import CHUNK_SIZE_CHARS, CHUNK_OVERLAP_CHARS, MAX_SECTION_SIZE_CHARS
+import hashlib
+cid = hashlib.md5(chunk.encode("utf-8")).hexdigest()
+
 
 def _sliding_chunks(text: str) -> List[Tuple[str, int]]:
     chunks = []

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# index/pdf_processing.py
 import re
 from typing import List, Optional, Tuple
 import fitz  # PyMuPDF

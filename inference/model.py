@@ -1,3 +1,5 @@
+# inference/model.py
+
 from llama_cpp import Llama
 
 def load_model_and_tokenizer(model_path: str):

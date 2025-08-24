@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# indexer/pdf_loader.py
 import os
 from typing import List, Dict
 from configs.rag_config import PDF_LIST
