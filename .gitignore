@@ -5,56 +5,57 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+*.log
+
+# 🛠️ Virtual Envs
 .env
 .venv/
 venv/
-*.log
+env/
 
-# 🤖 HuggingFace/transformers
+# 🤖 HuggingFace / Transformers
 *.bin
 *.pt
 *.ckpt
 *.safetensors
-tokenizer_config.json
 *.onnx
+*.h5
+tokenizer_config.json
+special_tokens_map.json
+pytorch_model.bin
 
 # 🧪 Jupyter / Colab
 .ipynb_checkpoints/
 *.ipynb
 
-# 🔐 Credential
+# 🔐 Credentials
 *.env
 .env.*
 
-# 📊 Output/결과
+# 📊 Output / Results
 submission.csv
+sample_submission.csv
+test.csv
+output/
+indexes/
 
-# 🧠 VSCode
+# 🧠 VSCode / IDE
 .vscode/
 *.code-workspace
+.idea/
 
 # 🚀 System
 .DS_Store
 Thumbs.db
 
-# 🧼 기타 실험 캐시
+# 🧼 Experiment Cache
 wandb/
 logs/
 cache/
 checkpoints/
 runs/
 
-# 모델 가중치/체크포인트 제외
-models/claude3-gemma/claude-3.7*/          
-*.gguf
-
-# === Models & Weights ===
-*.gguf
-*.bin
-*.pt
-*.pth
-*.ckpt
-*.safetensors
-*.h5
+# 🗂️ Model Weights (대용량 제외)
 models/
-model/
+*.gguf
+models/claude3-gemma/claude-3.7*/
