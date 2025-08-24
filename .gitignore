@@ -1,0 +1,60 @@
+# 📦 Python
+__pycache__/
+*.py[cod]
+*.egg
+*.egg-info/
+dist/
+build/
+.env
+.venv/
+venv/
+*.log
+
+# 🤖 HuggingFace/transformers
+*.bin
+*.pt
+*.ckpt
+*.safetensors
+tokenizer_config.json
+*.onnx
+
+# 🧪 Jupyter / Colab
+.ipynb_checkpoints/
+*.ipynb
+
+# 🔐 Credential
+*.env
+.env.*
+
+# 📊 Output/결과
+submission.csv
+
+# 🧠 VSCode
+.vscode/
+*.code-workspace
+
+# 🚀 System
+.DS_Store
+Thumbs.db
+
+# 🧼 기타 실험 캐시
+wandb/
+logs/
+cache/
+checkpoints/
+runs/
+
+# 모델 가중치/체크포인트 제외
+models/claude3-gemma/claude-3.7*/          
+*.gguf
+
+# === Models & Weights ===
+*.gguf
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.h5
+models/
+model/
