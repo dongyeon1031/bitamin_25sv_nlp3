@@ -33,10 +33,6 @@ pytorch_model.bin
 .env.*
 
 # 📊 Output / Results
-submission.csv
-sample_submission.csv
-test.csv
-output/
 indexes/
 
 # 🧠 VSCode / IDE
@@ -57,5 +53,6 @@ runs/
 
 # 🗂️ Model Weights (대용량 제외)
 models/
+model/
 *.gguf
 models/claude3-gemma/claude-3.7*/
