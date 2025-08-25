@@ -2,7 +2,10 @@ import os
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(__file__))
 PDF_DIR = os.path.join(PROJECT_ROOT, "data")
-PDF_LIST = [(os.path.normpath(p), name, kind) for (p, name, kind) in PDF_LIST]
+PDF_LIST = [
+    (os.path.normpath(os.path.join(PROJECT_ROOT, p)), name, kind)
+    for (p, name, kind) in PDF_LIST
+]
 
 INDEX_DIR = os.path.join(PROJECT_ROOT, "indexes")
 CHROMA_DIR = os.path.join(INDEX_DIR, "chroma")
