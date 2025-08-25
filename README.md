@@ -1,15 +1,26 @@
-## 윈도우 환경에서 실행 안되는 경우 확인해주세요!
-- 현재 코드에선 bitsandbytes 패키지를 통해 모델을 4비트 양자화해서 로드하는 로직이 포함돼있습니다.
-- bitsandbytes는 기본적으로 Linux/Ubuntu 전용이기 때문에 해당 부분 코멘트처리 해주시면 됩니다!
-- 깃에 푸쉬할땐 다시 코멘트 풀어서 해주세요.
+# 실행 가이드
 
-### code
-- inference.model.py 에서
-```python
-  model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        device_map="auto",
-        load_in_4bit=True,  # 이 부분 코멘트처리 해주세요!
-        torch_dtype=torch.float16
-    )
+## 🖥️ 사전 요구사항
+- Python 3.10 이상
+- pip 최신 버전
+- 가상환경 권장 (venv 또는 conda)
+- NVIDIA GPU + CUDA 설치됨
+
+---
+
+## 1. 실행환경 구성
+
+### 리눅스 환경 (CUDA + llama-cpp-python)
+
+```bash
+chmod +x install.sh
+./install.sh
 ```
+
+### 윈도우 환경 (CUDA 설정 포함)
+
+```bash
+pip install -r requirements.txt
+CMAKE_ARGS="-DLLAMA_CUBLAS=OFF -DGGML_CUDA=ON" pip install llama-cpp-python --no-cache-dir --force-reinstall --upgrade
+```
+---

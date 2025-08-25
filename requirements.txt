@@ -3,4 +3,4 @@ pandas
 torch
 transformers
 accelerate
-llama-cpp-python[cuda12]==0.3.16
+# llama-cpp-python[cuda12]==0.3.16
