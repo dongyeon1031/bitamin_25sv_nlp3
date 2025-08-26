@@ -4,7 +4,10 @@ import chromadb
 from chromadb.utils import embedding_functions
 from rank_bm25 import BM25Okapi
 from rag.embeddings import LocalEmbedder
-from finetune.configs.security_rag_config import CHROMA_DIR, BM25_INDEX_PATH, DOCSTORE_PATH, CHROMA_COLLECTION
+from configs.unified_rag_config import (
+    UNIFIED_CHROMA_DIR, UNIFIED_BM25_INDEX_PATH, UNIFIED_DOCSTORE_PATH, 
+    UNIFIED_CHROMA_COLLECTION
+)
 
 def _tokenize_ko(text: str):
     """한국어 토크나이저"""
@@ -12,24 +15,28 @@ def _tokenize_ko(text: str):
     text = text.lower()
     return re.findall(r"[가-힣]+|[a-z]+|\d+", text)
 
-def build_and_persist_security_index(chunks: List[Dict]):
-    """보안/경제 데이터용 인덱스 구축 및 저장"""
-    os.makedirs(os.path.dirname(DOCSTORE_PATH), exist_ok=True)
+def build_and_persist_unified_index(chunks: List[Dict]):
+    """통합 인덱스 구축 및 저장 (법령 + 보안/경제)"""
+    os.makedirs(os.path.dirname(UNIFIED_DOCSTORE_PATH), exist_ok=True)
+
+    print(f"[UNIFIED RAG] 통합 인덱스 구축 시작: {len(chunks)}개 청크")
 
     # 1) Docstore
-    with open(DOCSTORE_PATH, "w", encoding="utf-8") as f:
+    print("[UNIFIED RAG] Docstore 구축 중...")
+    with open(UNIFIED_DOCSTORE_PATH, "w", encoding="utf-8") as f:
         for c in chunks:
             f.write(json.dumps({
                 "id": c["id"],
                 "text": c["text"],
-                "parent_hash": c.get("parent_hash"),
+                "parent_hash": c.get("parent_hash", c["text"]),
                 "meta": c["meta"]
             }, ensure_ascii=False) + "\n")
 
     # 2) BM25
+    print("[UNIFIED RAG] BM25 인덱스 구축 중...")
     tokenized = [_tokenize_ko(c["text"]) for c in chunks]
     bm25 = BM25Okapi(tokenized)
-    with open(BM25_INDEX_PATH, "wb") as f:
+    with open(UNIFIED_BM25_INDEX_PATH, "wb") as f:
         pickle.dump({
             "bm25": bm25,
             "ids": [c["id"] for c in chunks],
@@ -38,9 +45,10 @@ def build_and_persist_security_index(chunks: List[Dict]):
         }, f)
 
     # 3) Chroma (cosine metric 보장)
-    client = chromadb.PersistentClient(path=CHROMA_DIR)
+    print("[UNIFIED RAG] Chroma 벡터 인덱스 구축 중...")
+    client = chromadb.PersistentClient(path=UNIFIED_CHROMA_DIR)
     try:
-        client.delete_collection(CHROMA_COLLECTION)
+        client.delete_collection(UNIFIED_CHROMA_COLLECTION)
     except Exception as e:
         print(f"[WARN] 기존 컬렉션 삭제 실패: {e}")
 
@@ -51,7 +59,7 @@ def build_and_persist_security_index(chunks: List[Dict]):
             return embedder.encode(texts).tolist()
 
     col = client.create_collection(
-        name=CHROMA_COLLECTION,
+        name=UNIFIED_CHROMA_COLLECTION,
         embedding_function=_EmbedFunc(),
         metadata={"hnsw:space": "cosine"}   
     )
@@ -61,4 +69,13 @@ def build_and_persist_security_index(chunks: List[Dict]):
     metas = [c["meta"] for c in chunks]
 
     col.add(ids=ids, documents=docs, metadatas=metas)
-    print(f"[RAG] 보안 데이터 인덱스 구축 완료: {len(chunks)}개 청크")
+    
+    # 통계 정보 출력
+    law_chunks = [c for c in chunks if c["meta"].get("doc_type") == "law"]
+    security_chunks = [c for c in chunks if c["meta"].get("doc_type") == "security"]
+    
+    print(f"[UNIFIED RAG] 통합 인덱스 구축 완료!")
+    print(f"  - 총 청크 수: {len(chunks)}개")
+    print(f"  - 법령 청크: {len(law_chunks)}개")
+    print(f"  - 보안/경제 청크: {len(security_chunks)}개")
+    print(f"  - 저장 경로: {UNIFIED_CHROMA_DIR}")

@@ -37,13 +37,13 @@
 
 ### 1. 인덱스 구축
 ```bash
-cd finetune/rag
+cd finetune/security_rag
 python build_security_index.py
 ```
 
 ### 2. 추론 실행
 ```python
-from finetune.inference.security_runner import run_security_inference_ensemble
+from finetune.security_inference.security_runner import run_security_inference_ensemble
 
 # 보안/경제 데이터 RAG 추론
 predictions = run_security_inference_ensemble(
@@ -59,16 +59,16 @@ predictions = run_security_inference_ensemble(
 
 ```
 finetune/
-├── configs/
+├── security_configs/
 │   └── security_rag_config.py      # 보안 RAG 설정
-├── rag/
+├── security_rag/
 │   ├── build_security_index.py     # 인덱스 구축 스크립트
 │   ├── security_pdf_loader.py      # PDF/Excel 로더
 │   ├── security_chunker.py         # 청킹
 │   ├── security_indexer.py         # 인덱스 구축
 │   ├── security_retriever.py       # 검색
 │   └── security_ensemble_reranker.py # 재순위화
-├── inference/
+├── security_inference/
 │   └── security_runner.py          # 추론 러너
 └── indexes/                        # 인덱스 저장 경로
     ├── chroma_security/

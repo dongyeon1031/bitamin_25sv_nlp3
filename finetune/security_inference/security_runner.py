@@ -3,9 +3,9 @@ from prompts.builder import extract_question_and_choices
 from tqdm import tqdm
 from prompts.builder import make_prompt_auto
 from utils.classify import is_multiple_choice
-from finetune.rag.security_retriever import SecurityHybridRetriever
-from finetune.rag.security_ensemble_reranker import SecurityEnsembleReranker
-from finetune.configs.security_rag_config import (
+from finetune.security_rag.security_retriever import SecurityHybridRetriever
+from finetune.security_rag.security_ensemble_reranker import SecurityEnsembleReranker
+from finetune.security_configs.security_rag_config import (
     FINAL_CONTEXT_K, RRF_WEIGHT, CROSS_ENCODER_WEIGHT, CROSS_ENCODER_MODEL
 )
 

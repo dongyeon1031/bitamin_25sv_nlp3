@@ -1,7 +1,8 @@
 import os
+import re
 import pandas as pd
 from typing import List, Dict
-from finetune.configs.security_rag_config import SECURITY_DATA_LIST
+from finetune.security_configs.security_rag_config import SECURITY_DATA_LIST
 from index.pdf_processing import (
     extract_text_with_pages, clean_page_text, normalize_full_text
 )
@@ -110,6 +111,10 @@ def load_security_pdfs() -> List[Dict]:
 def load_excel_terms() -> List[Dict]:
     """Excel 용어사전 파일 로드"""
     sections = []
+    
+    # DATA_DIR 정의
+    PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    DATA_DIR = os.path.join(PROJECT_ROOT, "data")
     
     excel_path = os.path.join(DATA_DIR, "20250815_시사경제용어사전.xlsx")
     

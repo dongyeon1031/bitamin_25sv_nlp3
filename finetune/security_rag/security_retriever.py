@@ -4,7 +4,7 @@ import numpy as np
 import chromadb
 from chromadb.utils import embedding_functions
 from rag.embeddings import LocalEmbedder
-from finetune.configs.security_rag_config import (
+from finetune.security_configs.security_rag_config import (
     DOCSTORE_PATH, BM25_INDEX_PATH, CHROMA_DIR, CHROMA_COLLECTION,
     TOP_K_VECTOR, TOP_K_BM25, MERGE_TOP_K
 )

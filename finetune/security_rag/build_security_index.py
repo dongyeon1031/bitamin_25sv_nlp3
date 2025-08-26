@@ -1,8 +1,8 @@
-# finetune/rag/build_security_index.py
+# finetune/security_rag/build_security_index.py
 
-from finetune.rag.security_pdf_loader import load_all_security_data
-from finetune.rag.security_chunker import make_chunks_from_security_sections as make_chunks
-from finetune.rag.security_indexer import build_and_persist_security_index
+from finetune.security_rag.security_pdf_loader import load_all_security_data
+from finetune.security_rag.security_chunker import make_chunks_from_security_sections as make_chunks
+from finetune.security_rag.security_indexer import build_and_persist_security_index
 
 def main():
     print("[보안 RAG] 보안/경제 데이터 로딩 중...")

@@ -1,7 +1,7 @@
 from typing import List, Dict
 from sentence_transformers import CrossEncoder
 from rag.embeddings import LocalEmbedder
-from finetune.configs.security_rag_config import EMBEDDING_MODEL_PATH, RRF_WEIGHT, CROSS_ENCODER_WEIGHT
+from finetune.security_configs.security_rag_config import EMBEDDING_MODEL_PATH, RRF_WEIGHT, CROSS_ENCODER_WEIGHT
 
 class SecurityEnsembleReranker:
     """

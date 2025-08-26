@@ -1,6 +1,6 @@
 import os, re, hashlib, uuid
 from typing import List, Dict, Tuple
-from finetune.configs.security_rag_config import CHUNK_SIZE_CHARS, CHUNK_OVERLAP_CHARS, MAX_SECTION_SIZE_CHARS
+from finetune.security_configs.security_rag_config import CHUNK_SIZE_CHARS, CHUNK_OVERLAP_CHARS, MAX_SECTION_SIZE_CHARS
 
 def _sliding_chunks(text: str, size: int, overlap: int) -> List[Tuple[str, int]]:
     """슬라이딩 윈도우 방식으로 텍스트를 청크로 분할"""
