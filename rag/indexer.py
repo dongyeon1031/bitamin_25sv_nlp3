@@ -20,14 +20,22 @@ def build_and_persist(chunks: List[Dict]):
             f.write(json.dumps({
                 "id": c["id"],
                 "text": c["text"],
+                "parent_hash": c.get("parent_hash"),
                 "meta": c["meta"]
             }, ensure_ascii=False) + "\n")
+
 
     # 2) BM25
     tokenized = [_tokenize_ko(c["text"]) for c in chunks]
     bm25 = BM25Okapi(tokenized)
     with open(BM25_INDEX_PATH, "wb") as f:
-        pickle.dump({"bm25": bm25}, f)
+        pickle.dump({
+            "bm25": bm25,
+            "ids": [c["id"] for c in chunks],
+            "docs": [c["text"] for c in chunks],
+            "metas": [c["meta"] for c in chunks],
+        }, f)
+
 
     # 3) Chroma (cosine metric 보장)
     client = chromadb.PersistentClient(path=CHROMA_DIR)

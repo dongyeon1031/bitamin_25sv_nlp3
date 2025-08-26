@@ -1,4 +1,5 @@
 import re
+from prompts.builder import extract_question_and_choices
 from tqdm import tqdm
 from prompts.builder import make_prompt_auto, make_prompt_with_context
 from utils.classify import is_multiple_choice
@@ -25,10 +26,22 @@ def extract_answer_only(generated_text: str, original_question: str) -> str:
         text = generated_text.strip()
     if not text:
         return "미응답"
+
     if is_multiple_choice(original_question):
-        match = re.search(r"([0-9]+)", text)
-        return match.group(1) if match else "0"
-    return text
+        # 선택지 개수 파악
+        _, options = extract_question_and_choices(original_question)
+        num_options = len(options) if options else 5 
+
+        match = re.search(r"\b([0-9]+)\b", text)
+        if match:
+            ans = int(match.group(1))
+            # 선택지 범위 내 숫자만 인정
+            if 1 <= ans <= num_options:
+                return str(ans)
+        return "0"  
+    else:
+        return text.strip().replace("\n", " ")
+
 
 def run_inference_mixed(llm, test_df, score_threshold: float = 0.01,
                         use_reranker: bool = True, top_k_retrieve: int = 30):

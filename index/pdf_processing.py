@@ -1,7 +1,7 @@
 #pdf_processing.py
 import re
 from typing import List, Optional, Tuple
-import fitz  # PyMuPDF
+import fitz  
 
 LAW_CENTER_LINE_PAT = re.compile(
     r"(?m)^\s*(?:법제처\s*\d+\s*국가법령정보센터|국가법령정보센터(?:\s*\d+)?|www\.law\.go\.kr)\s*$"

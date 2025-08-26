@@ -2,7 +2,7 @@ from typing import List, Dict
 from sentence_transformers import CrossEncoder
 
 class Reranker:
-    def __init__(self, model_name: str = "BAAI/bge-reranker-base", device: str = None):
+    def __init__(self, model_name: str = "BAAI/bge-reranker-base", max_length=1024, device: str = None):
     
         self.model = CrossEncoder(model_name, device=device)
 
