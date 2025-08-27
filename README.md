@@ -1,4 +1,25 @@
 # Bitamin 25SV NLP3 - 금융 법규 QA 시스템
+아래 무시하고 실행하는법                          
+python model.py                         
+python rerank_model.py             
+python model2.py                                    
+
+python unified_rag/build_unified_index.py                              
+
+python main.py                       
+
+주의사항                
+ERROR: Invalid requirement: 'nvidia-.*-cu12'              
+이런 오류가 뜨면 pytorch 버전이 안맞아서 그럼              
+python -m pip uninstall -y torch torchvision torchaudio xformers                                                          
+python -m pip freeze | grep -E 'nvidia-(cuda|cudnn|cublas|cufft|curand|cusolver|cusparse|nvjitlink|nvtx|nccl).*cu12' \                   
+  | cut -d= -f1 | xargs -r python -m pip uninstall -y                                    
+python -m pip cache purge                                        
+
+python -m pip install --index-url https://download.pytorch.org/whl/cu121 torch torchvision torchaudio --upgrade                             
+
+이거한번해보셈
+
 
 ## 🎯 프로젝트 개요
 금융 관련 법규 문서에 대한 질의응답 시스템으로, RAG(Retrieval-Augmented Generation) 기술을 활용하여 정확한 답변을 생성합니다.
@@ -173,21 +194,3 @@ RRF_WEIGHT = 0.6
 CROSS_ENCODER_WEIGHT = 0.4
 ```
 
-## 🤔 **레이어드 구조 FAQ**
-
-### **Q: 왜 RRF를 유지하나요?**
-**A**: RRF는 견고한 후보 결합을 제공하여 초기 검색의 안정성을 보장합니다.
-
-### **Q: 가중합과 RRF를 함께 쓸 수 있나요?**
-**A**: 네! 현재 시스템이 바로 그 방식입니다:
-1. **1단계**: RRF로 BM25 + Vector 융합
-2. **2단계**: RRF + CrossEncoder 가중합
-
-### **Q: dragonkue/BGE-m3-ko의 장점은?**
-**A**: 한국어 데이터로 추가 학습되어 한국어 법규 문서에 최적화된 성능을 제공합니다.
-
-## 📝 라이선스
-Apache 2.0 License
-
-## 🤝 기여
-버그 리포트, 기능 제안, PR 모두 환영합니다!
