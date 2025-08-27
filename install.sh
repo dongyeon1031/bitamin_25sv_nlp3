@@ -1,5 +1,6 @@
 #!/bin/bash
 
+pip install --upgrade pip
 pip install -r requirements.txt
 
 # llama-cpp-python은 별도로 CMake 옵션 강제해서 설치
