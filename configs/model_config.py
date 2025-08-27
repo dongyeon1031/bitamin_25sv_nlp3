@@ -1,1 +1,0 @@
-MODEL_NAME = "/home/elicer/bitamin_25sv_nlp3/models/Qwen3-Coder-30B-A3B-Instruct-Q6_K.gguf"

@@ -1,4 +1,6 @@
 import re
+import requests
+import json
 from tqdm import tqdm
 from prompts.builder import make_prompt_auto
 from utils.classify import is_multiple_choice
@@ -23,12 +25,23 @@ def extract_answer_only(generated_text: str, original_question: str) -> str:
     else:
         return text
 
-def run_inference(llm, test_df):
+def run_inference(test_df):
     preds = []
     for q in tqdm(test_df['Question'], desc="Inference"):
         prompt = make_prompt_auto(q)
-        response = llm(prompt, max_tokens=512, temperature=0.2, top_p=0.9)
-        generated_text = response['choices'][0]['text']
+        response = requests.post(
+            "http://localhost:11434/api/generate",
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({
+                "model": "davidau/qwen3-128k-30b-a3b-neo-max-ultra:Q6_K",  # ollama에 로드한 정확한 모델 이름
+                "prompt": prompt,
+                "stream": False,
+                "temperature": 0.2,
+            })
+        ).json()
+        generated_text = response["response"]
+        # already defined above
+        # generated_text = ...
         pred_answer = extract_answer_only(generated_text, original_question=q)
         preds.append(pred_answer)
     return preds
