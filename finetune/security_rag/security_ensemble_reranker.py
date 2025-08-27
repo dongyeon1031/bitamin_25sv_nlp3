@@ -11,7 +11,7 @@ class SecurityEnsembleReranker:
     """
     
     def __init__(self, 
-                 cross_encoder_model: str = "BAAI/bge-reranker-base",
+                 cross_encoder_model: str = "BAAI/bge-reranker-v2-m3",
                  rrf_weight: float = RRF_WEIGHT,
                  cross_encoder_weight: float = CROSS_ENCODER_WEIGHT,
                  max_length: int = 1024,

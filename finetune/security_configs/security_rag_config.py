@@ -29,7 +29,7 @@ FINAL_CONTEXT_K = 6
 
 # 모델 설정 (기존과 동일)
 EMBEDDING_MODEL_PATH = os.path.join(PROJECT_ROOT, "models", "bge-m3-ko")
-CROSS_ENCODER_MODEL = "BAAI/bge-reranker-base"
+CROSS_ENCODER_MODEL = "BAAI/bge-reranker-v2-m3"
 
 # 앙상블 설정
 RRF_WEIGHT = 0.4

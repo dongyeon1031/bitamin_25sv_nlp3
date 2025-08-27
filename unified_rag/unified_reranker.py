@@ -9,83 +9,90 @@ class UnifiedEnsembleReranker:
     - 1단계: RRF로 BM25 + Vector 융합
     - 2단계: RRF + CrossEncoder 가중합으로 재정렬
     """
-    
-    def __init__(self, 
-                 cross_encoder_model: str = "BAAI/bge-reranker-base",
-                 rrf_weight: float = RRF_WEIGHT,
-                 cross_encoder_weight: float = CROSS_ENCODER_WEIGHT,
-                 max_length: int = 1024,
-                 device: str = None):
-        """
-        Args:
-            cross_encoder_model: CrossEncoder 모델명
-            rrf_weight: RRF 점수 가중치 (BM25+Vector 융합 결과)
-            cross_encoder_weight: CrossEncoder 점수 가중치
-            max_length: CrossEncoder 최대 길이
-            device: 사용할 디바이스
-        """
-        self.cross_encoder = CrossEncoder(cross_encoder_model, device=device, max_length=max_length)
+
+    def __init__(
+        self,
+        cross_encoder_model: str = "BAAI/bge-reranker-v2-m3",
+        rrf_weight: float = RRF_WEIGHT,
+        cross_encoder_weight: float = CROSS_ENCODER_WEIGHT,
+        max_length: int = 512,             # ★ 1024 → 512 로 변경 (XLM-R 한도)
+        device: str = None,
+        ce_query_budget: int = 128,        # 질문 토큰 예산
+        batch_size: int = 16,              # CE 배치
+    ):
+        self.cross_encoder = CrossEncoder(
+            cross_encoder_model,
+            device=device,
+            max_length=max_length         # ★ predict()에서 자동 truncation
+        )
+        self.tok = self.cross_encoder.tokenizer
+        self.ce_max_length = max_length
+        self.ce_query_budget = ce_query_budget
+        self.batch_size = batch_size
+
         self.rrf_weight = rrf_weight
         self.cross_encoder_weight = cross_encoder_weight
-        
+
+    @staticmethod
+    def _truncate_by_tokens(tokenizer, text: str, max_tokens: int) -> str:
+        """토큰 기준으로 앞부분만 남겨 안전하게 자르기"""
+        if max_tokens <= 0 or not text:
+            return ""
+        ids = tokenizer.encode(text, add_special_tokens=False)
+        if len(ids) > max_tokens:
+            ids = ids[:max_tokens]
+        return tokenizer.decode(ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
+
     def _normalize_scores(self, scores: List[float]) -> List[float]:
-        """점수를 0-1 범위로 정규화"""
         if not scores:
             return scores
-        min_score, max_score = min(scores), max(scores)
-        if max_score == min_score:
+        mi, ma = min(scores), max(scores)
+        if ma == mi:
             return [0.5] * len(scores)
-        return [(s - min_score) / (max_score - min_score) for s in scores]
-    
+        return [(s - mi) / (ma - mi) for s in scores]
+
     def rerank(self, query: str, candidates: List[Dict], top_k: int = 8) -> List[Dict]:
-        """
-        통합 레이어드 Ensemble Reranking 수행
-        
-        Args:
-            query: 질문
-            candidates: 후보 문서들 (RRF로 이미 융합된 상태)
-            top_k: 반환할 상위 문서 수
-            
-        Returns:
-            재순위화된 문서 리스트
-        """
         if not candidates:
             return []
-        
-        # 1. RRF 점수 추출 (1단계에서 이미 BM25+Vector 융합 완료)
+
+        # 1) RRF 점수
         rrf_scores = [c.get("score", 0.0) for c in candidates]
-        
-        # 2. CrossEncoder 점수 계산 (2단계)
-        pairs = [(query, c["text"]) for c in candidates]
-        cross_encoder_scores = [float(s) for s in self.cross_encoder.predict(pairs)]
-        
-        # 3. 점수 정규화
-        rrf_normalized = self._normalize_scores(rrf_scores)
-        cross_encoder_normalized = self._normalize_scores(cross_encoder_scores)
-        
-        # 4. RRF + CrossEncoder 가중합으로 최종 점수 계산
-        ensemble_scores = []
-        for i in range(len(candidates)):
-            final_score = (
-                self.rrf_weight * rrf_normalized[i] +
-                self.cross_encoder_weight * cross_encoder_normalized[i]
-            )
-            ensemble_scores.append(final_score)
-        
-        # 5. 재순위화
+
+        # 2) CE 입력 준비: 질문/컨텍스트 토큰 예산 분배 후 트렁케이션
+        #    - 질문: ce_query_budget (기본 128)
+        #    - 컨텍스트: (max_length - 질문토큰 - 여유 3)
+        q_trim = self._truncate_by_tokens(self.tok, query, self.ce_query_budget)
+        q_ids = self.tok.encode(q_trim, add_special_tokens=False)
+        ctx_budget = max(1, self.ce_max_length - min(len(q_ids), self.ce_query_budget) - 3)
+
+        pairs = []
+        for c in candidates:
+            ctx = c.get("text", "")
+            ctx_trim = self._truncate_by_tokens(self.tok, ctx, ctx_budget)
+            pairs.append((q_trim, ctx_trim))
+
+        # 3) CE 점수 (512로 안전하게 잘린 상태)
+        ce_raw = self.cross_encoder.predict(pairs, batch_size=self.batch_size)
+        cross_encoder_scores = [float(s) for s in ce_raw]
+
+        # 4) 정규화 + 가중합
+        rrf_norm = self._normalize_scores(rrf_scores)
+        ce_norm = self._normalize_scores(cross_encoder_scores)
+
         reranked = []
-        for i, (candidate, ensemble_score) in enumerate(zip(candidates, ensemble_scores)):
-            new_candidate = candidate.copy()
-            new_candidate["ensemble_score"] = ensemble_score
-            new_candidate["rrf_score"] = rrf_normalized[i]
-            new_candidate["cross_encoder_score"] = cross_encoder_normalized[i]
-            reranked.append(new_candidate)
-        
-        # Ensemble 점수로 정렬
+        for i, c in enumerate(candidates):
+            final_score = self.rrf_weight * rrf_norm[i] + self.cross_encoder_weight * ce_norm[i]
+            cc = c.copy()
+            cc["ensemble_score"] = final_score
+            cc["rrf_score"] = rrf_norm[i]
+            cc["cross_encoder_score"] = ce_norm[i]
+            reranked.append(cc)
+
         reranked.sort(key=lambda x: x["ensemble_score"], reverse=True)
-        
         return reranked[:top_k]
 
     def filter_by_doc_type(self, query: str, candidates: List[Dict], doc_type: str) -> List[Dict]:
-        filtered = [c for c in candidates if c["meta"].get("doc_type") == doc_type]
-        return self.rerank(query, filtered)  # 임시로 첫 번째 텍스트를 쿼리로 사용
+        filtered = [c for c in candidates if c.get("meta", {}).get("doc_type") == doc_type]
+        if not filtered:
+            return []
+        return self.rerank(query, filtered)   # ← 쿼리는 그대로 전달 (OK)

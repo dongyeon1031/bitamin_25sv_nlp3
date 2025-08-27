@@ -56,3 +56,7 @@ models/
 model/
 *.gguf
 models/claude3-gemma/claude-3.7*/
+
+#
+/unified_indexes/
+unified_indexes/

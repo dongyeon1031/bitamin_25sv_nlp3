@@ -64,11 +64,18 @@ def build_and_persist_unified_index(chunks: List[Dict]):
         metadata={"hnsw:space": "cosine"}   
     )
 
-    ids = [c["id"] for c in chunks]
-    docs = [c["text"] for c in chunks]
-    metas = [c["meta"] for c in chunks]
-
-    col.add(ids=ids, documents=docs, metadatas=metas)
+        # 배치 크기 설정 (ChromaDB 제한보다 작게)
+    BATCH_SIZE = 5000
+    
+    # 배치별로 ChromaDB에 추가
+    for i in range(0, len(chunks), BATCH_SIZE):
+        batch_chunks = chunks[i:i + BATCH_SIZE]
+        batch_ids = [c["id"] for c in batch_chunks]
+        batch_docs = [c["text"] for c in batch_chunks]
+        batch_metas = [c["meta"] for c in batch_chunks]
+        
+        print(f"[UNIFIED RAG] Chroma 배치 추가 중: {i+1}-{min(i+BATCH_SIZE, len(chunks))}/{len(chunks)}")
+        col.add(ids=batch_ids, documents=batch_docs, metadatas=batch_metas)
     
     # 통계 정보 출력
     law_chunks = [c for c in chunks if c["meta"].get("doc_type") == "law"]

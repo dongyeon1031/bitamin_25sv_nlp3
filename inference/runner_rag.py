@@ -3,13 +3,16 @@ from prompts.builder import extract_question_and_choices
 from tqdm import tqdm
 from prompts.builder import make_prompt_auto, make_prompt_with_context
 from utils.classify import is_multiple_choice
-from rag.retriever import HybridRetriever
-from rag.simple_ensemble_reranker import SimpleEnsembleReranker
-from configs.rag_config import (
-    FINAL_CONTEXT_K, RRF_WEIGHT, CROSS_ENCODER_WEIGHT, CROSS_ENCODER_MODEL
+from unified_rag.unified_retriever import UnifiedHybridRetriever
+from unified_rag.unified_reranker import UnifiedEnsembleReranker
+from configs.unified_rag_config import (
+    FINAL_CONTEXT_K, RRF_WEIGHT, CROSS_ENCODER_WEIGHT, CROSS_ENCODER_MODEL,
+    LAW_KEYWORDS, SECURITY_KEYWORDS
 )
 
 def is_law_related(question: str) -> bool:
+    """법령 관련 질문인지 확인 (기존 패턴 + 키워드 기반)"""
+    # 기존 패턴
     patterns = [
         r"제\s*\d+\s*조",        
         r"제\s*\d+\s*조의\s*\d+", 
@@ -17,7 +20,19 @@ def is_law_related(question: str) -> bool:
         r"시행규칙",
         r"[가-힣]+법"            
     ]
-    return any(re.search(p, question) for p in patterns)
+    
+    # 패턴 매칭
+    if any(re.search(p, question) for p in patterns):
+        return True
+    
+    # 키워드 매칭
+    question_lower = question.lower()
+    return any(keyword in question_lower for keyword in LAW_KEYWORDS)
+
+def is_security_related(question: str) -> bool:
+    """보안/경제 관련 질문인지 확인"""
+    question_lower = question.lower()
+    return any(keyword in question_lower for keyword in SECURITY_KEYWORDS)
 
 def extract_answer_only(generated_text: str, original_question: str) -> str:
     if "답변:" in generated_text:
@@ -45,19 +60,19 @@ def extract_answer_only(generated_text: str, original_question: str) -> str:
 def run_inference_ensemble(llm, test_df, score_threshold: float = 0.01,
                           use_ensemble: bool = True, top_k_retrieve: int = 30):
     """
-    레이어드 Ensemble Reranker를 사용한 조건부 RAG 추론
-    - 1단계: RRF로 BM25 + Vector 융합 (기존 유지)
-    - 2단계: RRF + CrossEncoder 가중합으로 재정렬 (추가)
-    - 법령 질문: 무조건 RAG
+    통합 레이어드 Ensemble Reranker를 사용한 조건부 RAG 추론
+    - 1단계: RRF로 BM25 + Vector 융합 (법령 + 보안/경제 통합)
+    - 2단계: RRF + CrossEncoder 가중합으로 재정렬
+    - 법령/보안 질문: 무조건 RAG
     - 일반 질문: retriever 상위 score >= threshold 이면 RAG
     - 그 외: LLM 단독
     """
-    retriever = HybridRetriever()
+    retriever = UnifiedHybridRetriever()
     
-    # 레이어드 Ensemble Reranker 초기화
+    # 통합 레이어드 Ensemble Reranker 초기화
     ensemble_reranker = None
     if use_ensemble:
-        ensemble_reranker = SimpleEnsembleReranker(
+        ensemble_reranker = UnifiedEnsembleReranker(
             cross_encoder_model=CROSS_ENCODER_MODEL,
             rrf_weight=RRF_WEIGHT,
             cross_encoder_weight=CROSS_ENCODER_WEIGHT
@@ -65,13 +80,13 @@ def run_inference_ensemble(llm, test_df, score_threshold: float = 0.01,
     
     preds = []
 
-    for q in tqdm(test_df["Question"], desc="Inference (Layered Ensemble)"):
+    for q in tqdm(test_df["Question"], desc="Inference (Unified RAG)"):
         use_rag = False
         contexts = []
         cands = retriever.retrieve(q, merge_top_k=top_k_retrieve)
 
-        # 1) 법령 질문이면 무조건 RAG
-        if is_law_related(q) and cands:
+        # 1) 법령/보안 관련 질문이면 무조건 RAG
+        if (is_law_related(q) or is_security_related(q)) and cands:
             use_rag = True
         # 2) 일반 질문 → RRF score 기준
         elif cands and cands[0]["score"] >= score_threshold:
@@ -79,7 +94,7 @@ def run_inference_ensemble(llm, test_df, score_threshold: float = 0.01,
 
         if use_rag:
             if ensemble_reranker and cands:
-                # 레이어드 Ensemble Reranker로 재순위화
+                # 통합 레이어드 Ensemble Reranker로 재순위화
                 cands = ensemble_reranker.rerank(q, cands, top_k=FINAL_CONTEXT_K)
 
             used = []
