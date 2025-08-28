@@ -1,4 +1,5 @@
 import re
+import numpy as np
 from prompts.builder import extract_question_and_choices
 from tqdm import tqdm
 from prompts.builder import make_prompt_auto, make_prompt_with_context
@@ -34,6 +35,51 @@ def is_security_related(question: str) -> bool:
     question_lower = question.lower()
     return any(keyword in question_lower for keyword in SECURITY_KEYWORDS)
 
+def gen_query_variants(llm, q, n=3):
+    """Multi-Query + HyDE로 쿼리 확장"""
+    variants = [q]
+    
+    # 1) Multi-Query
+    mq_prompt = f"다음 질문을 한국어로 의미를 바꾸지 않게 1문장씩 {n}가지로 바꿔 써줘.\n질문: {q}\n출력은 줄바꿈으로 구분된 문장만."
+    mq = llm(mq_prompt, max_tokens=128, temperature=0.8, top_p=0.9)["choices"][0]["text"]
+    variants += [v.strip() for v in mq.split("\n") if v.strip()]
+
+    # 2) HyDE 한 줄
+    hyde_prompt = f"다음 질문에 대한 그럴듯한 한 줄 요약답을 간결히 써줘(추론/설명 없이 한 문장):\n{q}\n답:"
+    hyde = llm(hyde_prompt, max_tokens=64, temperature=0.7, top_p=0.9)["choices"][0]["text"].strip()
+    variants.append(hyde)
+    
+    # 중복 제거
+    seen, uniq = set(), []
+    for v in variants:
+        if v and v not in seen:
+            uniq.append(v); seen.add(v)
+    return uniq[:1+n+1]
+
+def pick_mc_with_ce(question, options, contexts, cross_encoder, max_ctx=5):
+    """CrossEncoder로 객관식 정답 결정"""
+    # options: ["1 ...", "2 ...", ...]
+    opt_nums, opt_texts = [], []
+    for opt in options:
+        m = re.match(r"^\s*(\d+)", opt)
+        num = m.group(1) if m else str(len(opt_nums)+1)
+        body = re.sub(r"^\s*\d+\s*[).:\-]?\s*", "", opt).strip()
+        opt_nums.append(num)
+        opt_texts.append(body)
+
+    pairs = []
+    used_ctx = contexts[:max_ctx]
+    for body in opt_texts:
+        q_opt = f"{question}\n선택지: {body}"
+        for c in used_ctx:
+            ctx = c["text"][:1200]  # 안전 컷
+            pairs.append((q_opt, ctx))
+
+    scores = cross_encoder.predict(pairs, batch_size=16)
+    k = len(used_ctx)
+    agg = [float(np.mean(scores[i*k:(i+1)*k])) for i in range(len(opt_texts))]
+    return str(int(opt_nums[int(np.argmax(agg))]))
+
 def extract_answer_only(generated_text: str, original_question: str) -> str:
     if "답변:" in generated_text:
         text = generated_text.split("답변:")[-1].strip()
@@ -66,6 +112,8 @@ def run_inference_ensemble(llm, test_df, score_threshold: float = 0.01,
     - 법령/보안 질문: 무조건 RAG
     - 일반 질문: retriever 상위 score >= threshold 이면 RAG
     - 그 외: LLM 단독
+    - 객관식: CrossEncoder로 정답 결정 (우선순위)
+    - 검색: Multi-Query + HyDE로 풍부화
     """
     retriever = UnifiedHybridRetriever()
     
@@ -83,7 +131,15 @@ def run_inference_ensemble(llm, test_df, score_threshold: float = 0.01,
     for q in tqdm(test_df["Question"], desc="Inference (Unified RAG)"):
         use_rag = False
         contexts = []
-        cands = retriever.retrieve(q, merge_top_k=top_k_retrieve)
+        
+        # Multi-Query + HyDE로 검색 풍부화
+        exp_qs = gen_query_variants(llm, q, n=3)
+        merged = {}
+        for qq in exp_qs:
+            for r in retriever.retrieve(qq, merge_top_k=top_k_retrieve):
+                if r["id"] not in merged or merged[r["id"]]["score"] < r["score"]:
+                    merged[r["id"]] = r
+        cands = sorted(merged.values(), key=lambda x: x["score"], reverse=True)[:top_k_retrieve]
 
         # 1) 법령/보안 관련 질문이면 무조건 RAG
         if (is_law_related(q) or is_security_related(q)) and cands:
@@ -107,6 +163,14 @@ def run_inference_ensemble(llm, test_df, score_threshold: float = 0.01,
                     contexts.append({"text": c["text"], "meta": c.get("meta", {})})
                 if len(contexts) >= FINAL_CONTEXT_K:
                     break
+            
+            # 객관식이면 CrossEncoder로 정답 결정 (우선순위)
+            if is_multiple_choice(q) and ensemble_reranker:
+                question, options = extract_question_and_choices(q)
+                ans = pick_mc_with_ce(question, options, contexts, ensemble_reranker.cross_encoder)
+                preds.append(ans)
+                continue
+                
             prompt = make_prompt_with_context(q, contexts)
         else:
             prompt = make_prompt_auto(q)

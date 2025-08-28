@@ -27,7 +27,7 @@ def make_prompt_auto(text):
         question, options = extract_question_and_choices(text)
         prompt = (
             "당신은 금융보안 전문가입니다.\n"
-            "아래 질문에 대해 정답 **선택지 번호(1~5 중 하나)**만 출력하세요.\n"
+            "아래 질문에 대해 **제공된 선택지 중 정답 번호 하나**만 출력하세요.\n"
             "중요: 숫자 하나만 출력하세요. 다른 설명, 기호, 문장은 절대 출력하지 마세요.\n\n"
             f"질문: {question}\n"
             "선택지:\n"
@@ -59,7 +59,7 @@ def make_prompt_with_context(text: str, contexts: list):
         prompt = (
             "당신은 금융보안 및 법규 전문가입니다.\n"
             "아래 제공된 문맥(Context)만 근거로 사용하여 **정답 선택지 번호 하나만 출력**하세요.\n"
-            "정답은 반드시 1,2,3,4,5 중 하나 숫자만 출력합니다.\n"
+            "정답은 반드시 제공된 선택지 번호 중 하나의 숫자만 출력합니다.\n"
             "추론 과정, 설명, 다른 텍스트는 절대 출력하지 마세요.\n\n"
             f"[Context]\n{ctx_block}\n\n"
             f"질문: {question}\n"
