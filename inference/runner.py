@@ -33,7 +33,7 @@ def run_inference(test_df):
             "http://localhost:11434/api/generate",
             headers={"Content-Type": "application/json"},
             data=json.dumps({
-                "model": "exaone-custom",  # ollama에 로드한 정확한 모델 이름
+                "model": "exaone-custom",
                 "prompt": prompt,
                 "stream": False,
                 "temperature": 0.2,
