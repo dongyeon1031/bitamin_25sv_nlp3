@@ -1,0 +1,1 @@
+FROM ./models/EXAONE-4.0-32B-Q6_K.gguf

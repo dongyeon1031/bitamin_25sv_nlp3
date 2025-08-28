@@ -1,10 +1,18 @@
 import re
 
-# 객관식 여부 판단 함수
-def is_multiple_choice(question_text):
+# 선택지 접두부 패턴: 1) / 1. / 1- / 1번 / "1 " / ①②③ …
+OPTION_PREFIX = re.compile(
+    r"^\s*(?:"
+    r"[1-9][0-9]?\s*(?:번|[).:\-])\s+"   # 1번 / 1) / 1. / 1-
+    r"|[1-9][0-9]?\s+"                  # 1<space>
+    r"|[①-⑳]\s*"                       # ①~⑳
+    r")"
+)
+
+def is_multiple_choice(question_text: str) -> bool:
     """
-    객관식 여부를 판단: 2개 이상의 숫자 선택지가 줄 단위로 존재할 경우 객관식으로 간주
+    줄 단위로 2개 이상 OPTION_PREFIX가 발견되면 객관식으로 간주
     """
     lines = question_text.strip().split("\n")
-    option_count = sum(bool(re.match(r"^\s*[1-9][0-9]?\s", line)) for line in lines)
+    option_count = sum(bool(OPTION_PREFIX.match(line)) for line in lines)
     return option_count >= 2

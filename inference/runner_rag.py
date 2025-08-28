@@ -14,6 +14,23 @@ from configs.unified_rag_config import (
     LAW_KEYWORDS, SECURITY_KEYWORDS
 )
 
+def force_numeric_answer(text: str, num_options: int) -> str:
+    """
+    모델 출력에서 첫 번째 정수를 추출해 1..num_options 범위만 허용.
+    실패 시 '0' 반환.
+    """
+    if not text:
+        return "0"
+    t = re.sub(r"\s+", " ", text).strip()
+    # "정답: 3", "3번", "3 입니다" 등 모두 포괄
+    m = re.search(r"(?:정답\s*[:은는]\s*)?([0-9]+)\s*(?:번|[)．.])?", t)
+    if not m:
+        m = re.search(r"\b([0-9]+)\b", t)
+    if not m:
+        return "0"
+    n = int(m.group(1))
+    return str(n) if 1 <= n <= max(1, num_options) else "0"
+
 def is_law_related(question: str) -> bool:
     """법령 관련 질문인지 확인 (기존 패턴 + 키워드 기반)"""
     # 기존 패턴
@@ -203,7 +220,7 @@ def pick_mc_with_ce(question, options, contexts, cross_encoder, max_ctx=5):
     for body in opt_texts:
         q_opt = f"{question}\n선택지: {body}"
         for c in used_ctx:
-            ctx = c["text"][:1200]  # 안전 컷
+            ctx = c["text"][:800]   # 보수적 컷으로 CE 경고 완화
             pairs.append((q_opt, ctx))
 
     # CrossEncoder 점수 계산
@@ -349,7 +366,8 @@ def run_inference_ensemble(test_df, score_threshold: float = 0.01,
                 })
             ).json()
             generated_text = response["response"]
-            pred_answer = extract_answer_only(generated_text, original_question=q)
+            _q, _opts = extract_question_and_choices(q)
+            pred_answer = force_numeric_answer(generated_text, len(_opts) or 5)
             preds.append(pred_answer)
 
     return preds
@@ -365,4 +383,3 @@ def run_inference_mixed(llm, test_df, score_threshold: float = 0.01,
         use_ensemble=use_reranker, 
         top_k_retrieve=top_k_retrieve
     )
-
