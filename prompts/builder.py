@@ -27,7 +27,7 @@ def make_prompt_auto(text):
         question, options = extract_question_and_choices(text)
         prompt = (
                 "당신은 금융보안 전문가입니다.\n"
-                "아래 질문에 대해 적절한 **정답 선택지 번호만 출력**하세요.\n\n"
+                "아래 질문에 대해 **제공된 선택지 중 정답 번호 하나**만 출력하세요.\n\n"
                 f"질문: {question}\n"
                 "선택지:\n"
                 f"{chr(10).join(options)}\n\n"
@@ -54,7 +54,7 @@ def make_prompt_with_context(text: str, contexts: list):
         question, options = extract_question_and_choices(text)
         prompt = (
                 "당신은 금융보안 전문가입니다.\n"
-                "아래 질문에 대해 적절한 **정답 선택지 번호만 출력**하세요.\n\n"
+                "아래 질문에 대해 **제공된 선택지 중 정답 번호 하나**만 출력하세요.\n\n"
                 f"질문: {question}\n"
                 "선택지:\n"
                 f"{chr(10).join(options)}\n\n"
