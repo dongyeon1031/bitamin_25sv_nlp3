@@ -1,21 +1,15 @@
 from data.loader import load_test_data, load_sample_submission
-from inference.model import load_model_and_tokenizer
-from configs.model_config import MODEL_NAME
 from output.save import save_submission
 from inference.runner_rag import run_inference_ensemble   
 
 if __name__ == "__main__":
     import os
-   
-    model_name = MODEL_NAME
-    pipe = load_model_and_tokenizer(model_name)
 
     test = load_test_data()
     submission = load_sample_submission()
 
     # 간단한 Ensemble Reranker를 사용한 추론
     preds = run_inference_ensemble(
-        pipe,
         test,
         score_threshold=0.03,   
         use_ensemble=True,     

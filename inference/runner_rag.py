@@ -1,4 +1,6 @@
 import re
+import requests
+import json
 from prompts.builder import extract_question_and_choices
 from tqdm import tqdm
 from prompts.builder import make_prompt_auto, make_prompt_with_context
@@ -57,7 +59,7 @@ def extract_answer_only(generated_text: str, original_question: str) -> str:
     else:
         return text.strip().replace("\n", " ")
 
-def run_inference_ensemble(llm, test_df, score_threshold: float = 0.01,
+def run_inference_ensemble(test_df, score_threshold: float = 0.01,
                           use_ensemble: bool = True, top_k_retrieve: int = 30):
     """
     통합 레이어드 Ensemble Reranker를 사용한 조건부 RAG 추론
@@ -111,9 +113,21 @@ def run_inference_ensemble(llm, test_df, score_threshold: float = 0.01,
         else:
             prompt = make_prompt_auto(q)
 
-        response = llm(prompt, max_tokens=512, temperature=0.2, top_p=0.9)
-        generated_text = response["choices"][0].get("text", "") or response["choices"][0].get("content", "")
-        preds.append(extract_answer_only(generated_text, q))
+        response = requests.post(
+            "http://localhost:11434/api/generate",
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({
+                "model": "exaone-custom",  # ollama에 로드한 정확한 모델 이름
+                "prompt": prompt,
+                "stream": False,
+                "temperature": 0.2,
+            })
+        ).json()
+        generated_text = response["response"]
+        # already defined above
+        # generated_text = ...
+        pred_answer = extract_answer_only(generated_text, original_question=q)
+        preds.append(pred_answer)
 
     return preds
 
