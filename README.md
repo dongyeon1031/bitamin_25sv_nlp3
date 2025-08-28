@@ -1,4 +1,21 @@
 # Bitamin 25SV NLP3 - 금융 법규 QA 시스템
+
+---
+
+## 실행환경 구성법
+
+### 리눅스 환경 (CUDA + llama-cpp-python)
+
+```bash
+chmod +x install.sh
+./install.sh
+```
+
+### 윈도우 환경 (CUDA 설정 포함)
+
+윈도우는 그런거 없어요.
+---
+
 아래 무시하고 실행하는법                          
 python model.py                         
 python rerank_model.py             
