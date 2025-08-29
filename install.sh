@@ -36,3 +36,6 @@ echo "[*] Registering model to Ollama..."
 ollama create exaone-custom -f Modelfile
 
 echo "[*] 끝~~"
+
+echo "[*] Running main.py..."
+python main.py
